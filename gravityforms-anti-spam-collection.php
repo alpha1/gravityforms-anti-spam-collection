@@ -570,3 +570,30 @@ function wphacks_mark_as_spam_phony_us_phone_number_fields( $is_spam, $form, $en
 	}
 	return $is_spam;
 }
+
+add_filter( 'gform_entry_is_spam', 'mark_as_spam_banned_email_addresses_on_email_fields', 10, 3 );
+function mark_as_spam_banned_email_addresses_on_email_fields( $is_spam, $form, $entry ) {
+	
+	$email_denylist = array(
+			'test@gmail.com',
+			'test@googlemail.com',
+			'nobody@nobody.com'
+		);
+		
+	$email_denylist = apply_filters('wphacks_gravityforms_anti_spam_collections_allowlist_domains_on_email_field', $email_denylist );
+	
+	if( isset( $form['fields'] ) ){
+		foreach( $form['fields'] as $field ){
+			if( $field->type == "email"){
+				$email = rgar( $entry, $field->id);
+				if( in_array( strtolower( $email ), $email_denylist ) ){
+					$spam_reason = 'Field '. $field->id .' has a banned email address.';
+					wphacks_anti_spam_collection_log_spam_reason( $entry, $spam_reason, $form );
+					return true;
+				}
+			}
+		}
+	}
+
+	return $is_spam;
+}
